@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cash Sale Tracker</title>
+  <style>
+    body { font-family: Arial; margin: 20px; max-width: 800px; }
+    input, button { padding: 8px; margin: 5px 5px 5px 0; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    .summary { font-weight: bold; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>Cash Sale Transaction Tracker</h2>
+
+<form id="transactionForm">
+  <input type="date" id="date" required>
+  <input type="text" id="description" placeholder="Description" required>
+  <input type="number" step="0.01" id="amount" placeholder="Amount" required>
+  <input type="text" id="customer" placeholder="Customer Name">
+  <button type="submit">Add Transaction</button>
+  <button type="button" onclick="exportCSV()">Export to CSV</button>
+</form>
+
+<h3>Transaction List</h3>
+<table id="transactionTable">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Description</th>
+      <th>Amount</th>
+      <th>Customer</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<div class="summary">Total: $<span id="totalAmount">0.00</span></div>
+
+<script>
+  let transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+
+  const form = document.getElementById('transactionForm');
+  const tableBody = document.querySelector('#transactionTable tbody');
+  const totalAmountDisplay = document.getElementById('totalAmount');
+
+  function renderTransactions() {
+    tableBody.innerHTML = '';
+    let total = 0;
+
+    transactions.forEach((t, index) => {
+      total += parseFloat(t.amount);
+      const row = `<tr>
+        <td>${t.date}</td>
+        <td>${t.description}</td>
+        <td>$${parseFloat(t.amount).toFixed(2)}</td>
+        <td>${t.customer || ''}</td>
+        <td><button onclick="deleteTransaction(${index})">Delete</button></td>
+      </tr>`;
+      tableBody.innerHTML += row;
+    });
+
+    totalAmountDisplay.textContent = total.toFixed(2);
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+  }
+
+  function deleteTransaction(index) {
+    transactions.splice(index, 1);
+    renderTransactions();
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const date = document.getElementById('date').value;
+    const description = document.getElementById('description').value;
+    const amount = document.getElementById('amount').value;
+    const customer = document.getElementById('customer').value;
+
+    transactions.push({ date, description, amount, customer });
+    renderTransactions();
+    form.reset();
+  });
+
+  function exportCSV() {
+    let csv = "Date,Description,Amount,Customer\n";
+    transactions.forEach(t => {
+      csv += `${t.date},${t.description},${t.amount},${t.customer || ''}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "transactions.csv";
+    link.click();
+  }
+
+  renderTransactions();
+</script>
+
+</body>
+</html>
